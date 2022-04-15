@@ -31,6 +31,8 @@ show()
 ```
 
 ## More Information ##
-FRHEED was developed in October 2018 as a replacement to existing commercial RHEED software in Chris Palmstrom's research group at the University of California, Santa Barbara. It was initially installed on a single Molecular Beam Epitaxy (MBE) system in the Palmstrom Lab, but was quickly installed on other systems both within the Palmstrom group as well as other research groups at UCSB. Since then, FRHEED gone through multiple major overhauls and refactors and is now used by several research groups worldwide.
+FRHEED was developed in October 2018 as a replacement to existing commercial RHEED software in Chris Palmstrom's research group at the University of California, Santa Barbara. 
+It was initially installed on a single Molecular Beam Epitaxy (MBE) system in the Palmstrom Lab, but was quickly installed on other systems both within the Palmstrom group as 
+well as other research groups at UCSB. Since then, FRHEED gone through multiple major overhauls and refactors and is now used by several research groups worldwide.
 
 I welcome any feedback and suggestions for new features as I continue to work on improving FRHEED to be the most viable replacement to commercial software that it can be.
