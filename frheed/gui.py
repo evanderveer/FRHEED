@@ -19,6 +19,7 @@ utils.fix_pyqt()
 
 class FRHEED(QMainWindow):
     def __init__(self):
+        
         # Get application BEFORE initializing
         self.app = QApplication.instance() or QApplication(sys.argv)
         

@@ -19,16 +19,14 @@ from PyQt5.QtCore import (
     
     )
 
-from frheed.cameras.flir import FlirCamera, get_available_cameras as get_flir_cams
-from frheed.cameras.usb import UsbCamera, get_available_cameras as get_usb_cams
+from frheed.cameras import camera_classes
+for module, cam_class in camera_classes.items():
+    exec(f'from frheed.cameras.{module} import {cam_class}, get_available_cameras as get_{module}_cams')
+
 from frheed.cameras import CameraError
 from frheed.utils import get_icon
 
-
-class CameraClasses(Enum):
-    flir = FlirCamera
-    usb = UsbCamera
-
+cam_classes_list = ','.join([cam_class for cam_class in camera_classes.values()])
 
 @dataclass
 class CameraObject:
@@ -36,15 +34,12 @@ class CameraObject:
     src: Union[str, int]
     name: Optional[str] = None
     
-    def get_camera(self) -> Union[FlirCamera, UsbCamera]:
+    def get_camera(self) -> Union[eval(cam_classes_list)]:
         return self.cam_class(src=self.src)
 
 
 class CameraSelection(QWidget):
-    camera_classes = (
-        FlirCamera,
-        UsbCamera
-        )
+    
     camera_selected = pyqtSignal()
     
     def __init__(self):
@@ -54,7 +49,7 @@ class CameraSelection(QWidget):
         # TODO: Apply global stylesheet
         
         # Attributes to be assigned later
-        self._cam: Optional[FlirCamera, UsbCamera] = None
+        self._cam: Optional[eval(cam_classes_list)] = None
         
         # Check for available cameras
         cams = self.available_cameras()
@@ -79,7 +74,6 @@ class CameraSelection(QWidget):
         
         # Create buttons for each camera
         for i, cam in enumerate(cams):
-            # Create the button
             btn = QPushButton(cam.name)
             
             # Connect signal
@@ -88,11 +82,9 @@ class CameraSelection(QWidget):
             def make_lambda(cam_obj: CameraObject):
                 return lambda: self.select_camera(cam_obj)
             btn.clicked.connect(make_lambda(cam))
-        
-            # Add button to layout
+            
             self.layout.addWidget(btn, i, 0)
             
-        # Show the widget
         self.setVisible(True)
         
     def available_cameras(self) -> List[CameraObject]:
@@ -101,7 +93,9 @@ class CameraSelection(QWidget):
                     for src, name in get_usb_cams().items()]
         flir_cams = [CameraObject(FlirCamera, src, name)
                      for src, name in get_flir_cams().items()]
-        return usb_cams + flir_cams
+        gigE_cams = [CameraObject(GigECamera, src, name)
+                     for src, name in get_gige_cams().items()]
+        return usb_cams + flir_cams + gigE_cams
     
     def select_camera(self, cam: CameraObject) -> object:
         """ Get the selected camera class object. """

@@ -2,3 +2,9 @@
 
 class CameraError(Exception):
     pass
+    
+camera_classes = {
+        'flir': 'FlirCamera',
+        'usb': 'UsbCamera',
+        'gige': 'GigECamera'
+        }

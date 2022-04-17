@@ -27,8 +27,6 @@ from PyQt5.QtCore import (
 #     )
 
 from frheed.widgets.camera_widget import VideoWidget
-from frheed.cameras.flir import FlirCamera
-from frheed.cameras.usb import UsbCamera
 from frheed.widgets.plot_widgets import PlotGridWidget
 from frheed.widgets.canvas_widget import CanvasShape, CanvasLine
 from frheed.widgets.selection_widgets import CameraSelection
@@ -36,12 +34,13 @@ from frheed.widgets.common_widgets import HSpacer, VSpacer
 from frheed.utils import snip_lists
 
 
+
 class RHEEDWidget(QWidget):
     _initialized = False
     
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        
+
         # Settings
         self.setSizePolicy(QSizePolicy.MinimumExpanding,
                            QSizePolicy.MinimumExpanding)
