@@ -6,6 +6,7 @@ Widgets for selecting things, including the source camera to use.
 from typing import Optional, Union, List
 from dataclasses import dataclass
 from enum import Enum
+from functools import partial
 
 from PyQt5.QtWidgets import (
     QWidget,
@@ -18,24 +19,17 @@ from PyQt5.QtCore import (
     pyqtSignal,
     
     )
-
+    
+from frheed.cameras import CameraObject
+from frheed.cameras import CameraError
+from frheed.utils import get_icon
 from frheed.cameras import camera_classes
 for module, cam_class in camera_classes.items():
     exec(f'from frheed.cameras.{module} import {cam_class}, get_available_cameras as get_{module}_cams')
 
-from frheed.cameras import CameraError
-from frheed.utils import get_icon
+
 
 cam_classes_list = ','.join([cam_class for cam_class in camera_classes.values()])
-
-@dataclass
-class CameraObject:
-    cam_class: object
-    src: Union[str, int]
-    name: Optional[str] = None
-    
-    def get_camera(self) -> Union[eval(cam_classes_list)]:
-        return self.cam_class(src=self.src)
 
 
 class CameraSelection(QWidget):
@@ -47,9 +41,6 @@ class CameraSelection(QWidget):
         
         # NOTE: No parent is provided so the window can be minimized to the taskbar
         # TODO: Apply global stylesheet
-        
-        # Attributes to be assigned later
-        self._cam: Optional[eval(cam_classes_list)] = None
         
         # Check for available cameras
         cams = self.available_cameras()
@@ -76,12 +67,8 @@ class CameraSelection(QWidget):
         for i, cam in enumerate(cams):
             btn = QPushButton(cam.name)
             
-            # Connect signal
-            # Doing it this way is necessary because otherwise all lambda
-            # functions will initialize the same camera
-            def make_lambda(cam_obj: CameraObject):
-                return lambda: self.select_camera(cam_obj)
-            btn.clicked.connect(make_lambda(cam))
+            #Use partial() to make a function of no arguments
+            btn.clicked.connect(partial(self.select_camera, cam))
             
             self.layout.addWidget(btn, i, 0)
             
@@ -95,9 +82,10 @@ class CameraSelection(QWidget):
                      for src, name in get_flir_cams().items()]
         gigE_cams = [CameraObject(GigECamera, src, name)
                      for src, name in get_gige_cams().items()]
+        
         return usb_cams + flir_cams + gigE_cams
     
-    def select_camera(self, cam: CameraObject) -> object:
+    def select_camera(self, cam: CameraObject) -> CameraObject:
         """ Get the selected camera class object. """
         # Deselect existing camera
         try:
@@ -106,7 +94,7 @@ class CameraSelection(QWidget):
             pass
         
         # Initialize camera
-        self._cam = cam.get_camera()
+        self._cam = cam.cam_class
         print(f"Connected to {cam.name}")
         
         # Emit camera_selected signal
@@ -116,6 +104,7 @@ class CameraSelection(QWidget):
         self.setVisible(False)
         
         return self._cam
+    
     
 
 if __name__ == "__main__":
