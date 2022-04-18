@@ -31,19 +31,37 @@ for module, cam_class in camera_classes.items():
 
 cam_classes_list = ','.join([cam_class for cam_class in camera_classes.values()])
 
+def select_camera(camera_widget):
+    camera_selection_window = CameraSelection(camera_widget)
+    return(camera_selection_window)
+    
+    
+def _find_available_cameras():
+    # Check each camera class for availability
+    usb_cams = [CameraObject(UsbCamera, src, name) 
+                for src, name in get_usb_cams().items()]
+    flir_cams = [CameraObject(FlirCamera, src, name)
+                 for src, name in get_flir_cams().items()]
+    gigE_cams = [CameraObject(GigECamera, src, name)
+                 for src, name in get_gige_cams().items()]
+    
+    return(usb_cams + flir_cams + gigE_cams)
+
 
 class CameraSelection(QWidget):
     
-    camera_selected = pyqtSignal()
+    is_camera_selected = pyqtSignal()
     
-    def __init__(self):
+    def __init__(self, camera_widget):
         super().__init__(None)
         
         # NOTE: No parent is provided so the window can be minimized to the taskbar
         # TODO: Apply global stylesheet
         
+        self.camera_widget = camera_widget
+        
         # Check for available cameras
-        cams = self.available_cameras()
+        cams = _find_available_cameras()
         
         # Set window properties
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.Window)
@@ -68,42 +86,29 @@ class CameraSelection(QWidget):
             btn = QPushButton(cam.name)
             
             #Use partial() to make a function of no arguments
-            btn.clicked.connect(partial(self.select_camera, cam))
+            btn.clicked.connect(partial(self._set_camera, cam))
             
             self.layout.addWidget(btn, i, 0)
             
         self.setVisible(True)
-        
-    def available_cameras(self) -> List[CameraObject]:
-        # Check each camera class for availability
-        usb_cams = [CameraObject(UsbCamera, src, name) 
-                    for src, name in get_usb_cams().items()]
-        flir_cams = [CameraObject(FlirCamera, src, name)
-                     for src, name in get_flir_cams().items()]
-        gigE_cams = [CameraObject(GigECamera, src, name)
-                     for src, name in get_gige_cams().items()]
-        
-        return usb_cams + flir_cams + gigE_cams
+        self.raise_()
     
-    def select_camera(self, cam: CameraObject) -> CameraObject:
-        """ Get the selected camera class object. """
-        # Deselect existing camera
-        try:
-            self._cam.close()
+    def _set_camera(self, cam):
+    # Deselect existing camera, if present
+        try: 
+            self.camera_widget._camera.close()
         except:
             pass
         
         # Initialize camera
-        self._cam = cam.cam_class
+        self.camera_widget.set_camera(cam.cam_class) ###THIS MUST STILL BE CHANGED!!!
         print(f"Connected to {cam.name}")
         
-        # Emit camera_selected signal
-        self.camera_selected.emit()
+        # Emit is_camera_selected signal
+        self.is_camera_selected.emit()
         
         # Hide the selection widget
         self.setVisible(False)
-        
-        return self._cam
     
     
 

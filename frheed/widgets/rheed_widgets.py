@@ -4,6 +4,7 @@ Widgets for RHEED analysis.
 """
 
 from typing import Union
+from functools import partial
 
 from PyQt5.QtWidgets import (
     QWidget,
@@ -29,7 +30,7 @@ from PyQt5.QtCore import (
 from frheed.widgets.camera_widget import VideoWidget
 from frheed.widgets.plot_widgets import PlotGridWidget
 from frheed.widgets.canvas_widget import CanvasShape, CanvasLine
-from frheed.widgets.selection_widgets import CameraSelection
+from frheed.widgets.selection_widgets import select_camera
 from frheed.widgets.common_widgets import HSpacer, VSpacer
 from frheed.utils import snip_lists
 
@@ -51,49 +52,17 @@ class RHEEDWidget(QWidget):
         self.layout.setSpacing(4)
         self.setLayout(self.layout)
         
-        # Create the menu bar
-        self.menubar = QMenuBar(self)
         
-        # "File" menu
-        # Note: &File underlines the "F" to indicate the keyboard shortcut,
-        # but will not be visible unless enabled manually in Windows.
-        # To enable it, go to Control Panel -> Ease of Access -> Keyboard 
-        #                   -> Underline keyboard shortcuts and access keys
-        self.file_menu = self.menubar.addMenu("&File")
-        self.file_menu.addAction("&Change camera", self.show_cam_selection)
         
-        # "View" menu
-        self.view_menu = self.menubar.addMenu("&View")
-        self.show_live_plots_item = self.view_menu.addAction("&Live plots")
-        self.show_live_plots_item.setCheckable(True)
-        self.show_live_plots_item.setChecked(True)
-        self.show_live_plots_item.toggled.connect(self.show_live_plots)
-        
-        # "Tools" menu
-        self.tools_menu = self.menubar.addMenu("&Tools")
-        self.preferences_item = self.tools_menu.addAction("&Preferences")
-        
-        # Add menubar
-        self.layout.addWidget(self.menubar, 0, 0, 1, 1)
-        
-        # Create camera selection widget and wait for choice
+        # Make all the widgets invisible until camera selected
         self.setVisible(False)
-        self.cam_selection = CameraSelection()
-        self.cam_selection.camera_selected.connect(self._init_ui)
-        self.cam_selection.raise_()
         
-    @pyqtSlot()
-    def _init_ui(self) -> None:
-        """ Finish UI setup after selecting a camera. """
-        # Show the widget
-        self.setVisible(True)
-        
-        # Create the camera widget
-        camera = self.cam_selection._cam
-        self.camera_widget = VideoWidget(camera, parent=self)
+        # Make the camera widget
+        #camera = self.cam_selection._cam
+        self.camera_widget = VideoWidget(parent=self)
         self.camera_widget.setSizePolicy(QSizePolicy.MinimumExpanding,
                                          QSizePolicy.MinimumExpanding)
-        
+                                         
         # Create the plot widgets
         # self.region_plot = PlotWidget(parent=self, popup=True, name="Regions (Live)")
         # self.profile_plot = PlotWidget(parent=self, popup=True, name="Line Profiles (Live)")
@@ -113,9 +82,45 @@ class RHEEDWidget(QWidget):
         self.plot_grid.closed.connect(self.live_plots_closed)
         self.camera_widget.display.canvas.shape_deleted.connect(self.plot_grid.remove_curves)
         
+        
+        # Create the camera selection window
+        self.cam_selected_signal = select_camera(self.camera_widget)
+        self.cam_selected_signal.is_camera_selected.connect(self._finish_ui_init)
+        
+        # Create the menu bar
+        self.menubar = QMenuBar(self)
+        
+        # "File" menu
+        # Note: &File underlines the "F" to indicate the keyboard shortcut,
+        # but will not be visible unless enabled manually in Windows.
+        # To enable it, go to Control Panel -> Ease of Access -> Keyboard 
+        #                   -> Underline keyboard shortcuts and access keys
+        self.file_menu = self.menubar.addMenu("&File")
+        self.file_menu.addAction("&Change camera", partial(select_camera, self.camera_widget))
+        
+        # "View" menu
+        self.view_menu = self.menubar.addMenu("&View")
+        self.show_live_plots_item = self.view_menu.addAction("&Live plots")
+        self.show_live_plots_item.setCheckable(True)
+        self.show_live_plots_item.setChecked(True)
+        self.show_live_plots_item.toggled.connect(self.show_live_plots)
+        
+        # "Tools" menu
+        self.tools_menu = self.menubar.addMenu("&Tools")
+        self.preferences_item = self.tools_menu.addAction("&Preferences")
+        
+        # Add menubar
+        self.layout.addWidget(self.menubar, 0, 0, 1, 1)
+        
+        
+    @pyqtSlot()
+    def _finish_ui_init(self):
+        """ Finish UI setup after selecting a camera. """
+        # Show the widget
+        self.setVisible(True)
+        
         # Reconnect camera_selected signal
-        self.cam_selection.camera_selected.disconnect()
-        self.cam_selection.camera_selected.connect(self.change_camera)
+        self.cam_selected_signal.disconnect()
         
         # Mark as initialized
         self._initialized = True
@@ -126,7 +131,7 @@ class RHEEDWidget(QWidget):
     def closeEvent(self, event) -> None:
         if self._initialized:
             [wid.setParent(None) for wid in 
-             [self.region_plot, self.profile_plot, self, self.plot_grid]]
+                [self.region_plot, self.profile_plot, self, self.plot_grid]]
             self.camera_widget.closeEvent(event)
         self.cam_selection.close()
         
@@ -169,16 +174,6 @@ class RHEEDWidget(QWidget):
         plot.plot_widget.removeItem(plot.plot_items.pop(shape.color_name))
         self.camera_widget.analysis_worker.data.pop(shape.color_name)
         
-    @pyqtSlot()
-    def show_cam_selection(self) -> None:
-        """ Show the camera selection window. """
-        self.cam_selection.show()
-        self.cam_selection.raise_()
-        
-    @pyqtSlot()
-    def change_camera(self) -> None:
-        """ Change the active camera. """
-        self.camera_widget.set_camera(self.cam_selection._cam)
         
     @pyqtSlot()
     def live_plots_closed(self) -> None:

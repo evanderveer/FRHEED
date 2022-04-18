@@ -79,14 +79,14 @@ class VideoWidget(QWidget):
     _min_h = 348
     _max_w = MAX_W
     
-    def __init__(self, camera: Union[FlirCamera, UsbCamera], parent = None):
+    def __init__(self, parent = None):
         super().__init__(parent)
         
         # Store colormap
         self._colormap = DEFAULT_CMAP
         
         # Store camera reference and start the camera
-        self.set_camera(camera)
+        #self.set_camera(camera)
         
         # Frame settings
         self.setSizePolicy(QSizePolicy.MinimumExpanding, 
@@ -115,15 +115,11 @@ class VideoWidget(QWidget):
         self.play_button.setSizePolicy(QSizePolicy.Maximum,
                                        QSizePolicy.Maximum)
         
-        # Determine maximum zoom because huge images lag the system
-        cam_w, cam_h = camera.width, camera.height
-        max_zoom = max(min(MAX_ZOOM, (MAX_W / cam_w), (MAX_H / cam_h)), 1)
-        
         # Create zoom slider
         self.slider = DoubleSlider(decimals=2, log=False, parent=self)
         self.slider.setFocusPolicy(Qt.NoFocus)
         self.slider.setMinimum(MIN_ZOOM)
-        self.slider.setMaximum(max_zoom)
+        self.slider.setMaximum(1) # Placeholder value
         self.slider.setValue(1.0)
         self.slider.setSingleStep(0.01)
         self.slider.setTickPosition(QSlider.TicksAbove)
@@ -346,7 +342,7 @@ class VideoWidget(QWidget):
     def make_camera_settings_widget(self) -> None:
         self.settings_widget = CameraSettingsWidget(self)
     
-    def set_camera(self, camera: Union[FlirCamera, UsbCamera]) -> None:
+    def set_camera(self, camera):
         # Change the camera and start it
         self._camera = camera
         self._camera.start(continuous=True)
