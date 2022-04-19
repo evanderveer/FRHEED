@@ -96,7 +96,7 @@ class RHEEDWidget(QWidget):
         # To enable it, go to Control Panel -> Ease of Access -> Keyboard 
         #                   -> Underline keyboard shortcuts and access keys
         self.file_menu = self.menubar.addMenu("&File")
-        self.file_menu.addAction("&Change camera", partial(select_camera, self.camera_widget))
+        self.file_menu.addAction("&Change camera", self.change_camera)
         
         # "View" menu
         self.view_menu = self.menubar.addMenu("&View")
@@ -182,6 +182,14 @@ class RHEEDWidget(QWidget):
     @pyqtSlot(bool)
     def show_live_plots(self, visible: bool) -> None:
         self.plot_grid.setVisible(visible)
+    
+    @pyqtSlot()
+    def change_camera(self):
+        """Closes the current camera, then selects a new one."""
+        self.camera_widget._camera.close()
+        self.cam_selected_signal = select_camera(self.camera_widget)
+        
+    
         
 
 if __name__ == "__main__":
