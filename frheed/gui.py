@@ -34,7 +34,7 @@ class FRHEED(QMainWindow):
         self.setCentralWidget(self.rheed_widget)
         
         # Connect signals
-        self.app.lastWindowClosed.connect(self.app.quit)
+        self.app.lastWindowClosed.connect(self.quit_app)
         
         # Set window properties
         self.setWindowTitle("FRHEED")
@@ -47,6 +47,9 @@ class FRHEED(QMainWindow):
         # Start blocking event loop that ends when app is closed
         sys.exit(self.app.exec_())
         
+    def quit_app(self):
+        print('CLosing the app')
+        self.app.quit()
 
 def show() -> FRHEED:
     logger.info("Opening FRHEED...")

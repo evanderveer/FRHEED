@@ -99,14 +99,14 @@ class GigECamera:
         
         
     def get_camera_features(self, camera_id):
-    """Collect the availabe camera features from the Vimba camera object"""
+        """Collect the availabe camera features from the Vimba camera object"""
         with vimba.Vimba.get_instance() as vim:
             with get_camera(camera_id) as cam:
                 features = {}
                 for feature in cam.get_all_features():
                     try:
                         value = feature.get()
-                    except AttributeError, VimbaFeatureError:
+                    except (AttributeError,VimbaFeatureError):
                         value = None
                     features[feature.get_name()] = value                    
         return(cam.get_all_features())
@@ -119,17 +119,8 @@ class GigECamera:
     @property
     def real_fps(self) -> float:
         """ Get the real frames per second (Hz) """
-        
-        # When not enough frames have been captured
-        if len(self._frame_times) <= 1:
+        if len(self._frame_times) <= 60:
             return 0.
-        
-        # When fewer than 60 frames have been captured in this acquisition
-        elif len(self._frame_times) < 60:
-            dt = (self._frame_times[-1] - self._frame_times[0])
-            return len(self._frame_times) / max(dt, 1)
-        
-        # Return the average frame time of the last 60 frames
         else:
             return 60 / (self._frame_times[-1] - self._frame_times[-60])
     

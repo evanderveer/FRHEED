@@ -193,9 +193,4 @@ class RHEEDWidget(QWidget):
         
 
 if __name__ == "__main__":
-    def test():
-        from frheed.utils import test_widget
-        
-        return test_widget(RHEEDWidget, block=True)
-        
-    widget, app = test()
+    pass

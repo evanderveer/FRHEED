@@ -338,25 +338,4 @@ class UsbCamera:
 
 
 if __name__ == "__main__":
-    
-    def test():
-        from PIL import Image 
-        
-        with UsbCamera() as cam:
-            while True:
-                try:
-                    
-                    for prop in cam._cap_props:
-                        print(prop, (getattr(cam, prop)))
-                        
-                    break
-                    
-                    array = cam.get_array()
-                    Image.fromarray(array).show()
-                    break
-                    
-                except KeyboardInterrupt:
-                    break
-        
-    test()
-        
+    pass
