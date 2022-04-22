@@ -74,10 +74,7 @@ class GigECamera:
             self.cam = cv2.VideoCapture(src)
             
         # Get camera attributes
-        for attr in _CAP_PROPS:### IMPLEMENT PROPERLY!!!
-            self.camera_attributes[attr] = {}
-            if attr in self._cap_props:
-                self.camera_attributes[attr]["description"] = self._cap_props[attr]
+        self.camera_attributes = get_camera_features(self.gige_camera_id)
         
         # Other attributes which may be accessed later
         self.running = True  # camera is running as soon as you connect to it
