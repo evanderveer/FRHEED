@@ -46,6 +46,7 @@ def _find_available_cameras():
                  for src, name in get_flir_cams().items()]
     gigE_cams = []#[CameraObject(GigECamera, src, name)
                  #for src, name in get_gige_cams().items()]
+    print(get_gigE_cams())
     
     return(usb_cams + flir_cams + gigE_cams)
 
