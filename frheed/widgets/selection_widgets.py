@@ -40,9 +40,14 @@ def select_camera(camera_widget):
     
 def _find_available_cameras():
     # Check each camera class for availability
-    usb_cams = [CameraObject(UsbCamera, src, name) for src, name in get_usb_cams().items()]
-    flir_cams = [CameraObject(FlirCamera, src, name) for src, name in get_flir_cams().items()]
-    gigE_cams = [CameraObject(GigECamera, cam_id, name) for cam_id, name in get_gige_cams().items()]
+    usb_cams = [CameraObject(UsbCamera, src, name) 
+                for src, name in get_usb_cams().items()]
+    flir_cams = [CameraObject(FlirCamera, src, name)
+                 for src, name in get_flir_cams().items()]
+    gigE_cams = []#[CameraObject(GigECamera, src, name)
+                 #for src, name in get_gige_cams().items()]
+    print(get_gige_cams())
+    
     return(usb_cams + flir_cams + gigE_cams)
 
 

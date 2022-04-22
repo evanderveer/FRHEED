@@ -24,8 +24,8 @@ def get_available_cameras() -> vimba.camera.Camera:
         print('Collecting available cameras')
         cams = vim.get_all_cameras()
         
-        for cam_num, cam_id in enumerate(cams.get_id()):
-            cam_dict[cam_id] = cam_num
+        for cam_num, cam in enumerate(cams):
+            cam_dict[cam.get_id()] = cam_num
     
     return(cam_dict)
     
