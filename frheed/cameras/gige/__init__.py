@@ -17,17 +17,18 @@ _DEBUG = (__name__ == "__main__")
 
 
 def get_available_cameras() -> vimba.camera.Camera:
-    """ Get available GigE cameras as a dictionary of {source: name}. """
+    """ Get available GigE cameras as a dictionary of {cam_id: name}. """
     cam_dict = {}
     with vimba.Vimba.get_instance() as vim:
         print('Vimba started')
         print('Collecting available cameras')
         cams = vim.get_all_cameras()
         
-        for cam_num, cam_src in enumerate(cams):
-            cam_dict[cam_src] = cam_num
+        for cam_num, cam_id in enumerate(cams.get_id()):
+            cam_dict[cam_id] = cam_num
     
     return(cam_dict)
+    
     
 class GigECamera:
     """ 
@@ -46,7 +47,7 @@ class GigECamera:
     """#### FIX THIS !!!
     
     
-    def __init__(self, vimba_camera = None, lock = False):
+    def __init__(self, vimba_camera_id = None, lock = False):
         """
         Parameters
         ----------
@@ -61,7 +62,7 @@ class GigECamera:
         super().__setattr__("camera_methods", {})
         super().__setattr__("lock", lock)
         
-        self.camera_object = vimba_camera
+        self.gige_camera_id = vimba_camera_id
         
         self.name = f"GigE{self.src}"
         self.camera_type = "GigE"
@@ -95,6 +96,20 @@ class GigECamera:
         
     def __str__(self) -> str:
         return f"GigE (Port {self.src})"
+        
+        
+    def get_camera_features(self, camera_id):
+    """Collect the availabe camera features from the Vimba camera object"""
+        with vimba.Vimba.get_instance() as vim:
+            with get_camera(camera_id) as cam:
+                features = {}
+                for feature in cam.get_all_features():
+                    try:
+                        value = feature.get()
+                    except AttributeError, VimbaFeatureError:
+                        value = None
+                    features[feature.get_name()] = value                    
+        return(cam.get_all_features())
 
     @property
     def initialized(self) -> bool:### IMPLEMENT PROPERLY!!!
