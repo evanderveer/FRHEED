@@ -31,10 +31,8 @@ for module, cam_class in camera_classes.items():
 
 cam_classes_list = ','.join([cam_class for cam_class in camera_classes.values()])
 
-def select_camera(camera_widget):
-    print("Selecting camera")
+def select_camera(camera_widget): ##DO THIS IN A BETTER WAY
     camera_selection_window = CameraSelection(camera_widget)
-    
     return(camera_selection_window)
     
     
@@ -57,7 +55,6 @@ class CameraSelection(QWidget):
     
     def __init__(self, camera_widget):
         super().__init__(None)
-        print("Selection window created")
         
         # NOTE: No parent is provided so the window can be minimized to the taskbar
         # TODO: Apply global stylesheet
@@ -79,8 +76,6 @@ class CameraSelection(QWidget):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         
-        print("Cameras collected")
-        
         # If there are no cameras, no buttons need to be added
         if not cams:
             btn = QPushButton("No cameras found")
@@ -98,7 +93,6 @@ class CameraSelection(QWidget):
             
         self.setVisible(True)
         self.raise_()
-        print("Waiting for click")
     
     def _set_camera(self, cam):        
         # Initialize camera

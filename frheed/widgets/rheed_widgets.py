@@ -119,7 +119,7 @@ class RHEEDWidget(QWidget):
         # Show the widget
         self.setVisible(True)
         
-        # Reconnect camera_selected signal
+        # Disconnect camera_selected signal to reuse camera selection logic
         self.cam_selected_signal.disconnect()
         
         # Mark as initialized
