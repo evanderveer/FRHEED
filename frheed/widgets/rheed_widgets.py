@@ -66,10 +66,10 @@ class RHEEDWidget(QWidget):
         # Create the plot widgets
         # self.region_plot = PlotWidget(parent=self, popup=True, name="Regions (Live)")
         # self.profile_plot = PlotWidget(parent=self, popup=True, name="Line Profiles (Live)")
-        self.plot_grid = PlotGridWidget(parent=self, title="Live Plots", popup=True)
-        self.region_plot = self.plot_grid.region_plot
-        self.profile_plot = self.plot_grid.profile_plot
-        self.line_scan_plot = self.plot_grid.line_scan_plot
+        #self.plot_grid = PlotGridWidget(parent=self, title="Live Plots", popup=True)
+        #self.region_plot = self.plot_grid.region_plot
+        #self.profile_plot = self.plot_grid.profile_plot
+        #self.line_scan_plot = self.plot_grid.line_scan_plot
         
         # Add widgets to layout
         self.layout.addWidget(self.camera_widget, 1, 0, 1, 1)
@@ -79,8 +79,8 @@ class RHEEDWidget(QWidget):
         # Connect signals
         self.camera_widget.analysis_worker.data_ready.connect(self.plot_data)
         self.camera_widget.display.canvas.shape_deleted.connect(self.remove_line)
-        self.plot_grid.closed.connect(self.live_plots_closed)
-        self.camera_widget.display.canvas.shape_deleted.connect(self.plot_grid.remove_curves)
+        #self.plot_grid.closed.connect(self.live_plots_closed)
+        #self.camera_widget.display.canvas.shape_deleted.connect(self.plot_grid.remove_curves)
         
         
         # Create the camera selection window
