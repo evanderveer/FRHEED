@@ -15,7 +15,6 @@ from frheed.cameras import CameraError
 # https://stackoverflow.com/a/54585850/10342097
 os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
 
-_DEBUG = (__name__ == "__main__")
 
 # Get non-platform-specific capture properties (0 < id < 50)
 _CAP_PROPS = [prop for prop in dir(cv2) if prop.startswith("CAP_PROP")
@@ -148,7 +147,7 @@ class UsbCamera:
         super().__setattr__("lock", lock)
         
         cam_list = list_cameras()
-        if _DEBUG:
+        if (__name__ == "__main__"):
             print(f"Found {len(cam_list)} USB camera(s)")
         
         if not cam_list:
@@ -202,7 +201,7 @@ class UsbCamera:
                 
             success = self.cam.set(propId, val)
             result = "succeeded" if success else "failed"
-            if _DEBUG or not success:
+            if (__name__ == "__main__") or not success:
                 print(f"Setting {attr} to {val} {result}")
             
         else:
