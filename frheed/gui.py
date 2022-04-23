@@ -29,7 +29,6 @@ class FRHEED(QMainWindow):
         
         # Initialize window
         super().__init__(parent=None)
-         
         
         # Show a splash screen while the app is loading
         self.splash_screen_widget = QSplashScreen(QPixmap("resources/icons/frheed.png"))

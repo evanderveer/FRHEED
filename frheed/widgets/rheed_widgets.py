@@ -23,9 +23,6 @@ from PyQt5.QtCore import (
     pyqtSignal,
     
     )
-# from PyQt5.QtGui import (
-    
-#     )
 
 from frheed.widgets.camera_widget import VideoWidget
 from frheed.widgets.plot_widgets import PlotGridWidget
@@ -51,8 +48,6 @@ class RHEEDWidget(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(4)
         self.setLayout(self.layout)
-        
-        
         
         # Make all the widgets invisible until camera selected
         self.setVisible(False)
@@ -193,9 +188,4 @@ class RHEEDWidget(QWidget):
         
 
 if __name__ == "__main__":
-    def test():
-        from frheed.utils import test_widget
-        
-        return test_widget(RHEEDWidget, block=True)
-        
-    widget, app = test()
+    pass
