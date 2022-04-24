@@ -31,8 +31,8 @@ for module, cam_class in camera_classes.items():
 
 cam_classes_list = ','.join([cam_class for cam_class in camera_classes.values()])
 
-def select_camera(camera_widget): ##DO THIS IN A BETTER WAY
-    camera_selection_window = CameraSelection(camera_widget)
+def select_camera(): 
+    camera_selection_window = CameraSelection()
     return(camera_selection_window)
     
     
@@ -44,7 +44,6 @@ def _find_available_cameras():
                  for src, name in get_flir_cams().items()]
     gigE_cams = []#[CameraObject(GigECamera, src, name)
                  #for src, name in get_gige_cams().items()]
-    print(get_gige_cams())
     
     return(usb_cams + flir_cams + gigE_cams)
 
@@ -52,14 +51,13 @@ def _find_available_cameras():
 class CameraSelection(QWidget):
     
     is_camera_selected = pyqtSignal()
+    no_camera_selected = pyqtSignal()
     
-    def __init__(self, camera_widget):
+    def __init__(self):
         super().__init__(None)
         
-        # NOTE: No parent is provided so the window can be minimized to the taskbar
         # TODO: Apply global stylesheet
         
-        self.camera_widget = camera_widget
         
         # Check for available cameras
         cams = _find_available_cameras()
@@ -94,10 +92,8 @@ class CameraSelection(QWidget):
         self.setVisible(True)
         self.raise_()
     
-    def _set_camera(self, cam):        
-        # Initialize camera
-        self.camera_widget.set_camera(cam.cam_class) ###THIS SHOULD STILL BE CHANGED!!!
-        print(f"Connected to {cam.name}")
+    def _set_camera(self, cam):
+        self.the_camera = cam
         
         # Emit is_camera_selected signal
         self.is_camera_selected.emit()
@@ -105,7 +101,9 @@ class CameraSelection(QWidget):
         # Hide the selection widget
         self.setVisible(False)
     
-    
+    def closeEvent(self, event):
+        self.no_camera_selected.emit()
+        super().closeEvent(event)
 
 if __name__ == "__main__":
     cam_select = CameraSelection()

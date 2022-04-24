@@ -79,8 +79,9 @@ class RHEEDWidget(QWidget):
         
         
         # Create the camera selection window
-        self.cam_selected_signal = select_camera(self.camera_widget)
-        self.cam_selected_signal.is_camera_selected.connect(self._finish_ui_init)
+        self.camera_selected = select_camera()
+        self.camera_selected.is_camera_selected.connect(self._finish_ui_init)
+        self.camera_selected.no_camera_selected.connect(self.close_temp)
         
         # Create the menu bar
         self.menubar = QMenuBar(self)
@@ -106,7 +107,11 @@ class RHEEDWidget(QWidget):
         
         # Add menubar
         self.layout.addWidget(self.menubar, 0, 0, 1, 1)
-        
+    
+    def close_temp(self):
+        print('Close signal emitted')
+        self.close()
+    
         
     @pyqtSlot()
     def _finish_ui_init(self):
@@ -114,21 +119,23 @@ class RHEEDWidget(QWidget):
         # Show the widget
         self.setVisible(True)
         
+        # Put the camera object into the VideoWidget
+        self.camera_widget.set_camera(self.camera_selected.the_camera.cam_class) ###FIX THIS
+        
         # Disconnect camera_selected signal to reuse camera selection logic
-        self.cam_selected_signal.disconnect()
+        self.camera_selected.is_camera_selected.disconnect()
+        self.camera_selected.no_camera_selected.disconnect()
         
         # Mark as initialized
         self._initialized = True
-        
-    def resizeEvent(self, event) -> None:
-        super().resizeEvent(event)
         
     def closeEvent(self, event) -> None:
         if self._initialized:
             [wid.setParent(None) for wid in 
                 [self.region_plot, self.profile_plot, self, self.plot_grid]]
             self.camera_widget.closeEvent(event)
-        self.cam_selection.close()
+        self.camera_selected.close()
+        super().closeEvent(event)
         
     @pyqtSlot(dict)
     def plot_data(self, data: dict) -> None:
@@ -167,8 +174,7 @@ class RHEEDWidget(QWidget):
         
         # Remove the line
         plot.plot_widget.removeItem(plot.plot_items.pop(shape.color_name))
-        self.camera_widget.analysis_worker.data.pop(shape.color_name)
-        
+        self.camera_widget.analysis_worker.data.pop(shape.color_name)   
         
     @pyqtSlot()
     def live_plots_closed(self) -> None:
@@ -181,10 +187,15 @@ class RHEEDWidget(QWidget):
     @pyqtSlot()
     def change_camera(self):
         """Closes the current camera, then selects a new one."""
-        self.camera_widget._camera.close()
-        self.cam_selected_signal = select_camera(self.camera_widget)
         
-    
+        self.camera_selected = select_camera()
+        
+        #Only close the current camera if a new one was selected
+        if not hasattr(self.camera_selected, 'the_camera'):
+            return
+            
+        self.camera_widget._camera.close()
+        self.camera_widget.set_camera(self.camera_selected.the_camera.cam_class)
         
 
 if __name__ == "__main__":

@@ -12,7 +12,9 @@ from frheed.widgets.plot_widgets import PlotGridWidget
 from frheed import utils
 # from frheed import settings
 from functools import partial
+from pathlib import Path
 
+resource_path = Path(__file__).parent / 'resources/icons/'
 
 logger = utils.get_logger()
 
@@ -31,7 +33,7 @@ class FRHEED(QMainWindow):
         super().__init__(parent=None)
         
         # Show a splash screen while the app is loading
-        self.splash_screen_widget = QSplashScreen(QPixmap("resources/icons/frheed.png"))
+        self.splash_screen_widget = QSplashScreen(QPixmap(str(resource_path / 'frheed.png')))
         self.splash_screen_widget.show()
         self.splash_screen_widget.raise_()
         
@@ -46,6 +48,7 @@ class FRHEED(QMainWindow):
         
         # Connect signals
         self.app.lastWindowClosed.connect(self.quit_app)
+        self.rheed_widget.camera_selected.no_camera_selected.connect(self.app.quit)
         
         # Set window properties
         self.setWindowTitle("FRHEED")
