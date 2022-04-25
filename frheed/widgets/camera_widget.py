@@ -140,7 +140,7 @@ class VideoWidget(QWidget):
         # TODO: Finish functionality of this button
         
         # Create settings widget
-        self.make_camera_settings_widget()
+        self.settings_widget = CameraSettingsWidget(self)
         
         # Create display for showing camera frame
         self.display = CameraDisplay(self)
@@ -339,8 +339,7 @@ class VideoWidget(QWidget):
             self._colormap = colormap
             # TODO: Update label that shows current colormap
     
-    def make_camera_settings_widget(self) -> None:
-        self.settings_widget = CameraSettingsWidget(self)
+ 
     
     def set_camera(self, camera):
         # Change the camera and start it
@@ -358,7 +357,8 @@ class VideoWidget(QWidget):
         self.slider.setValue(1.00)
         
         # Update camera settings widget
-        self.make_camera_settings_widget()
+        del(self.settings_widget)
+        self.settings_widget = CameraSettingsWidget(self)
         
     def start_analyzing_frames(self) -> None:
         self.analyze_frames = True
@@ -978,7 +978,8 @@ class Worker(QObject):
         super().__init__()
         self._parent = parent
         self._running = False
-        
+    
+    @property
     def camera(self) -> Union[FlirCamera, UsbCamera, None]:
         return getattr(self._parent, "camera", None)
     
@@ -992,7 +993,7 @@ class Worker(QObject):
         return self._running
 
 
-class CameraWorker(Worker):
+class CameraWorker(Worker):## TURN THIS INTO A CONTEXT MANAGER
     """ 
     A worker object to control frame acquisition.
     
@@ -1002,9 +1003,9 @@ class CameraWorker(Worker):
         self._running = True
         while self.running():
             try:
-                if self.camera().running:
+                if self.camera.running:
                     self.frame_ready.emit(
-                        self.camera().get_array(complete_frames_only=True)
+                        self.camera.get_array(complete_frames_only=True)
                         )
             except Exception as ex:
                 self.exception.emit(ex)
@@ -1012,7 +1013,7 @@ class CameraWorker(Worker):
     @pyqtSlot()
     def stop(self) -> None:
         self._running = False
-        self.camera().close()
+        self.camera.close()
         self.finished.emit()
 
 
@@ -1031,7 +1032,7 @@ class AnalysisWorker(Worker):
     
     @property
     def raw_frame(self) -> Union[np.ndarray, None]:
-        return getattr(self.camera(), "raw_frame", None)
+        return getattr(self.camera, "raw_frame", None)
     
     @pyqtSlot(np.ndarray)
     def analyze_frame(self, frame: np.ndarray) -> None:

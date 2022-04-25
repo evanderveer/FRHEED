@@ -12,6 +12,9 @@ import numpy as np
 
 from frheed.cameras import CameraError
 
+from vimba.c_binding import VmbCameraInfo, call_vimba_c, byref, sizeof
+from vimba.error import VimbaFeatureError
+
 
 _DEBUG = (__name__ == "__main__")
 
@@ -23,14 +26,16 @@ def get_available_cameras() -> vimba.camera.Camera:
         print('Vimba started')
         print('Collecting available cameras')
         cams = vim.get_all_cameras()
-        
+        cams_list = []
         for cam_num, cam in enumerate(cams):
-            cam_dict[cam.get_id()] = cam_num
+            cam_id = cam.get_id()
+            cam_info = VmbCameraInfo()
+            call_vimba_c('VmbCameraInfoQuery', cam_id.encode('utf-8'), byref(cam_info), sizeof(cam_info))
+            cams_list.append((cam_info, cam_num))
+    return(cams_list)
     
-    return(cam_dict)
     
-    
-class GigECamera:
+class GigECamera(vimba.camera.Camera):
     """ 
     A class used to encapsulate a Vimba GigE camera.
     
@@ -47,7 +52,7 @@ class GigECamera:
     """#### FIX THIS !!!
     
     
-    def __init__(self, vimba_camera_id = None, lock = False):
+    def __init__(self, src, vimba_camera_id = None, lock = False):
         """
         Parameters
         ----------
@@ -58,47 +63,40 @@ class GigECamera:
             initialized, attempts to set new attributes will raise an error. 
             The default is True.
         """
-        super().__setattr__("camera_attributes", {})
-        super().__setattr__("camera_methods", {})
-        super().__setattr__("lock", lock)
+        super().__init__(src)
+            
+        self.gige_camera_id = self.get_id()
         
-        self.gige_camera_id = vimba_camera_id
-        
-        self.name = f"GigE{self.src}"
+        self.name = f"GigE{self.gige_camera_id}"
         self.camera_type = "GigE"
-        
-        # Initialize the camera, either by index or filepath (to video)
-        if backend is not None:### IMPLEMENT PROPERLY!!!
-            self.cam = cv2.VideoCapture(src, backend)
-        else:
-            self.cam = cv2.VideoCapture(src)
+
             
         # Get camera attributes
-        self.camera_attributes = get_camera_features(self.gige_camera_id)
+        self.camera_attributes = self.get_camera_features(self.gige_camera_id)
         
         # Other attributes which may be accessed later
         self.running = True  # camera is running as soon as you connect to it
         self._frame_times = []
         self.incomplete_image_count = 0
                 
-    def __enter__(self) -> "UsbCamera":
-        self.init()
-        return self
     
-    def __exit__(self, type, value, traceback) -> None:
-        self.close()
-        
+    def __enter__(self):
+        super().__enter__(self)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        super().__exit__(self, exc_type, exc_value, exc_traceback)
+    
     def __del__(self) -> None:
         self.close()
         
     def __str__(self) -> str:
-        return f"GigE (Port {self.src})"
+        return f"GigE (Id {self.gige_camera_id})"
         
         
     def get_camera_features(self, camera_id):
         """Collect the availabe camera features from the Vimba camera object"""
         with vimba.Vimba.get_instance() as vim:
-            with get_camera(camera_id) as cam:
+            with vim.get_camera_by_id(camera_id) as cam:
                 features = {}
                 for feature in cam.get_all_features():
                     try:
@@ -106,12 +104,12 @@ class GigECamera:
                     except (AttributeError,VimbaFeatureError):
                         value = None
                     features[feature.get_name()] = value                    
-        return(cam.get_all_features())
+        return(features)
 
     @property
     def initialized(self) -> bool:### IMPLEMENT PROPERLY!!!
-        return self.cam.isOpened()
-    
+        #return self.cam.isOpened()
+        pass
     
     @property
     def real_fps(self) -> float:
@@ -123,19 +121,20 @@ class GigECamera:
     
     @property
     def width(self) -> int:### IMPLEMENT PROPERLY!!!
-        return int(self.CAP_PROP_FRAME_WIDTH)
-    
+        return(self.Width)
+        
     @property
     def height(self) -> int:### IMPLEMENT PROPERLY!!!
-        return int(self.CAP_PROP_FRAME_HEIGHT)
+        return(self.Height)
     
     @property
     def shape(self) -> Tuple[int, int]:### IMPLEMENT PROPERLY!!!
-        return (self.width, self.height)
-    
+        return((self.Width, self.Height))
+        
     def init(self):### IMPLEMENT PROPERLY!!!
+        pass
         if not self.initialized:
-            self.cam.open(self._src)
+            self.__enter__()
     
     def start(self, continuous: bool = True) -> None:### IMPLEMENT PROPERLY!!!
         # Initialize the camera
@@ -145,36 +144,32 @@ class GigECamera:
         self.running = True
         
     def stop(self) -> None:### IMPLEMENT PROPERLY!!!
+        self.__exit__(None,None,None)
         self._frame_times = []
         self.incomplete_image_count = 0
         self.running = False
     
     def close(self) -> None:### IMPLEMENT PROPERLY!!!
         self.stop()
-        self.cam.release()
+        #self.cam.release()
         
     def get_array(self, complete_frames_only: bool = False) -> np.ndarray:### IMPLEMENT PROPERLY!!!
-        # Grab and retrieve the camera array
-        is_complete, array = self.cam.read()
         
-        # Increment incomplete image count if full image is not retrieved
-        if not is_complete:
-            self.incomplete_image_count += 1
-            
-        # Ensure complete image is returned if option is chosen
-        if complete_frames_only and not is_complete:
-            return self.get_array(complete_frames_only)
+        # Grab and retrieve the camera array
+        array = self.cam.get_frame().as_opencv_image()
         
         # Store frame time for real FPS calculation
         self._frame_times.append(time.time())
         
-        return array
+        return(array)
     
     def disable_auto_exposure(self) -> None:### IMPLEMENT PROPERLY!!!
-        self.CAP_PROP_EXPOSURE = 0.25
+        pass
+     #   self.CAP_PROP_EXPOSURE = 0.25
         
     def enable_auto_exposure(self) -> None:### IMPLEMENT PROPERLY!!!
-        self.CAP_PROP_EXPOSURE = 0.75
+        pass
+     #   self.CAP_PROP_EXPOSURE = 0.75
         
     def get_info(self, name: str) -> dict:
         info = {"name": name}
