@@ -38,12 +38,12 @@ def select_camera():
     
 def _find_available_cameras():
     # Check each camera class for availability
-    usb_cams = [CameraObject(UsbCamera, src, name) 
+    usb_cams = [(UsbCamera(src), name) 
                 for src, name in get_usb_cams().items()]
-    flir_cams = [CameraObject(FlirCamera, src, name)
+    flir_cams = [(FlirCamera(src), name)
                  for src, name in get_flir_cams().items()]
-    gigE_cams = [CameraObject(GigECamera, src, name)
-                 for src, name in get_gige_cams()]
+    gigE_cams = [(GigECamera(src), name)
+                 for src, name in get_gige_cams().items()]
     
     return(usb_cams + flir_cams + gigE_cams)
 
@@ -82,10 +82,10 @@ class CameraSelection(QWidget):
         
         # Create buttons for each camera
         for i, cam in enumerate(cams):
-            btn = QPushButton(cam.name)
+            btn = QPushButton(str(cam[1]))
             
             #Use partial() to make a function of no arguments
-            btn.clicked.connect(partial(self._set_camera, cam))
+            btn.clicked.connect(partial(self._set_camera, cam[0]))
             
             self.layout.addWidget(btn, i, 0)
             
@@ -95,11 +95,11 @@ class CameraSelection(QWidget):
     def _set_camera(self, cam):
         self.the_camera = cam
         
-        # Emit is_camera_selected signal
-        self.is_camera_selected.emit()
-        
         # Hide the selection widget
         self.setVisible(False)
+        
+        # Emit is_camera_selected signal
+        self.is_camera_selected.emit()
     
     def closeEvent(self, event):
         self.no_camera_selected.emit()

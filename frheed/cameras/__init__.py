@@ -11,6 +11,12 @@ camera_classes = {
         
 class CameraObject:
 
-    def __init__(self, cam_class, src, name):
-        self.cam_class = cam_class(src)
-        self.name = name
+    def __init__(self):
+        pass
+        
+    def __enter__(self):
+        pass
+        
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        pass
+        

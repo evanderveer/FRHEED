@@ -48,7 +48,8 @@ class FRHEED(QMainWindow):
         
         # Connect signals
         self.app.lastWindowClosed.connect(self.quit_app)
-        self.rheed_widget.camera_selected.no_camera_selected.connect(self.app.quit)
+        self.rheed_widget.camera_selected.no_camera_selected.connect(self.quit_app)
+        self.rheed_widget.camera_widget.camera_worker.exception.connect(self.quit_app)
         
         # Set window properties
         self.setWindowTitle("FRHEED")
@@ -63,7 +64,9 @@ class FRHEED(QMainWindow):
         
     @pyqtSlot()
     def quit_app(self):
+        print('Quitting')
         self.app.quit()
+        sys.exit()
 
 def show() -> FRHEED:
     logger.info("Opening FRHEED...")

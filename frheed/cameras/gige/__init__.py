@@ -10,10 +10,11 @@ import vimba
 import cv2
 import numpy as np
 
-from frheed.cameras import CameraError
+from frheed.cameras import CameraError, CameraObject
 
 from vimba.c_binding import VmbCameraInfo, call_vimba_c, byref, sizeof
 from vimba.error import VimbaFeatureError
+
 
 
 _DEBUG = (__name__ == "__main__")
@@ -26,13 +27,10 @@ def get_available_cameras() -> vimba.camera.Camera:
         print('Vimba started')
         print('Collecting available cameras')
         cams = vim.get_all_cameras()
-        cams_list = []
         for cam_num, cam in enumerate(cams):
             cam_id = cam.get_id()
-            cam_info = VmbCameraInfo()
-            call_vimba_c('VmbCameraInfoQuery', cam_id.encode('utf-8'), byref(cam_info), sizeof(cam_info))
-            cams_list.append((cam_info, cam_num))
-    return(cams_list)
+            cam_dict[cam_id] = cam_num
+    return(cam_dict)
     
     
 class GigECamera(CameraObject):
@@ -63,31 +61,49 @@ class GigECamera(CameraObject):
             initialized, attempts to set new attributes will raise an error. 
             The default is True.
         """
-        super().__init__(src)
+        super().__init__()
             
-        self.gige_camera_id = self.get_id()
+        self.gige_camera_id = src
         
         self.name = f"GigE{self.gige_camera_id}"
         self.camera_type = "GigE"
 
             
         # Get camera attributes
-        self.camera_attributes = self.get_camera_features(self.gige_camera_id)
+        #self.camera_attributes = self.get_camera_features(self.gige_camera_id)
         
         # Other attributes which may be accessed later
-        self.running = True  # camera is running as soon as you connect to it
+          # camera is running as soon as you connect to it
         self._frame_times = []
         self.incomplete_image_count = 0
                 
     
     def __enter__(self):
-        super().__enter__(self)
+        super().__enter__()
+        
+        #Start the vimba instance
+        self.vim = vimba.Vimba.get_instance()
+        self.vim.__enter__()
+        
+        #Open the vimba camera 
+        self.vim_cam = self.vim.get_camera_by_id(self.gige_camera_id)
+        self.vim_cam.__enter__()
+
+        self.running = True
+        
+        return(self)
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.vim_cam.__exit__(exc_type, exc_value, exc_traceback)
+        self.vim.__exit__(exc_type, exc_value, exc_traceback)
         super().__exit__(self, exc_type, exc_value, exc_traceback)
+        
+        self._frame_times = []
+        self.incomplete_image_count = 0
+        self.running = False
     
     def __del__(self) -> None:
-        self.close()
+        self.__exit__(None,None,None)
         
     def __str__(self) -> str:
         return f"GigE (Id {self.gige_camera_id})"
@@ -105,11 +121,6 @@ class GigECamera(CameraObject):
                         value = None
                     features[feature.get_name()] = value                    
         return(features)
-
-    @property
-    def initialized(self) -> bool:### IMPLEMENT PROPERLY!!!
-        #return self.cam.isOpened()
-        pass
     
     @property
     def real_fps(self) -> float:
@@ -120,46 +131,25 @@ class GigECamera(CameraObject):
             return 60 / (self._frame_times[-1] - self._frame_times[-60])
     
     @property
-    def width(self) -> int:### IMPLEMENT PROPERLY!!!
+    def width(self) -> int:
         return(self.Width)
         
     @property
-    def height(self) -> int:### IMPLEMENT PROPERLY!!!
+    def height(self) -> int:
         return(self.Height)
     
     @property
-    def shape(self) -> Tuple[int, int]:### IMPLEMENT PROPERLY!!!
+    def shape(self) -> Tuple[int, int]:
         return((self.Width, self.Height))
         
-    def init(self):### IMPLEMENT PROPERLY!!!
-        pass
-        if not self.initialized:
-            self.__enter__()
-    
-    def start(self, continuous: bool = True) -> None:### IMPLEMENT PROPERLY!!!
-        # Initialize the camera
-        self.init()
-            
-        # Begin acquisition
-        self.running = True
-        
-    def stop(self) -> None:### IMPLEMENT PROPERLY!!!
-        self.__exit__(None,None,None)
-        self._frame_times = []
-        self.incomplete_image_count = 0
-        self.running = False
-    
-    def close(self) -> None:### IMPLEMENT PROPERLY!!!
-        self.stop()
-        #self.cam.release()
-        
     def get_array(self, complete_frames_only: bool = False) -> np.ndarray:### IMPLEMENT PROPERLY!!!
-        
         # Grab and retrieve the camera array
-        array = self.cam.get_frame().as_opencv_image()
+        array = self.vim_cam.get_frame().as_opencv_image()
+        print(type(array))
         
         # Store frame time for real FPS calculation
         self._frame_times.append(time.time())
+        print(self._frame_times())
         
         return(array)
     

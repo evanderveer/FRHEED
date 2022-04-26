@@ -973,7 +973,8 @@ class Worker(QObject):
     finished = pyqtSignal()
     frame_ready = pyqtSignal(np.ndarray)
     data_ready = pyqtSignal(np.ndarray)
-    exception = pyqtSignal(Exception)
+    exception = pyqtSignal()
+    camera = None #Will be set by the VideoWidget object
     
     def __init__(self, parent: VideoWidget):
         super().__init__()
@@ -986,7 +987,7 @@ class Worker(QObject):
     def canvas(self) -> Union[CanvasWidget, None]:
         return getattr(self.display(), "canvas", None)
         
-class CameraWorker(Worker):## TURN THIS INTO A CONTEXT MANAGER
+class CameraWorker(Worker):
     """ 
     A worker object to control frame acquisition.
     
@@ -999,10 +1000,11 @@ class CameraWorker(Worker):## TURN THIS INTO A CONTEXT MANAGER
             self.running = True
             while self.running:
                 try:
-                    frame = self.camera.get_array(complete_frames_only=True)
+                    frame = camera.get_array(complete_frames_only=True)
                     self.frame_ready.emit(frame)
                 except Exception as ex:
-                    self.exception.emit(ex)
+                    print(ex)
+                    self.exception.emit()
     
     @pyqtSlot()
     def stop(self) -> None:
