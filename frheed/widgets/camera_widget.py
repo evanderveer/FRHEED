@@ -185,7 +185,6 @@ class VideoWidget(QWidget):
         self.camera_worker.moveToThread(self.camera_thread)
         self.camera_worker.frame_ready.connect(self.show_frame)
         self.camera_worker.finished.connect(self.camera_thread.quit)
-        self.camera_thread.started.connect(self.camera_worker.start)
         self.camera_thread.start()
         
         # Set up plotting thread
@@ -244,7 +243,7 @@ class VideoWidget(QWidget):
         self.settings_widget.deleteLater()
         
     @pyqtSlot()
-    def start_or_stop_camera(self) -> None:
+    def start_or_stop_camera(self) -> None: ## LET THE CAMERA_WORKER HANDLE THIS
         if self.camera.running:
             self.camera.stop()
             self.play_button.setText("Start Camera")
@@ -343,8 +342,10 @@ class VideoWidget(QWidget):
     
     def set_camera(self, camera):
         # Change the camera and start it
-        self._camera = camera
-        self._camera.start(continuous=True)
+        self.camera_worker.camera = camera
+        
+        #Start the camera
+        self.camera_worker.start()
         
         # Update the zoom slider (if it has been created)
         if not hasattr(self, "slider"):
@@ -977,43 +978,35 @@ class Worker(QObject):
     def __init__(self, parent: VideoWidget):
         super().__init__()
         self._parent = parent
-        self._running = False
-    
-    @property
-    def camera(self) -> Union[FlirCamera, UsbCamera, None]:
-        return getattr(self._parent, "camera", None)
+        self.running = False
     
     def display(self) -> Union[CameraDisplay, None]:
         return getattr(self._parent, "display", None)
     
     def canvas(self) -> Union[CanvasWidget, None]:
         return getattr(self.display(), "canvas", None)
-    
-    def running(self) -> bool:
-        return self._running
-
-
+        
 class CameraWorker(Worker):## TURN THIS INTO A CONTEXT MANAGER
     """ 
     A worker object to control frame acquisition.
     
     """
+    
     @pyqtSlot()
     def start(self) -> None:
-        self._running = True
-        while self.running():
-            try:
-                if self.camera.running:
-                    self.frame_ready.emit(
-                        self.camera.get_array(complete_frames_only=True)
-                        )
-            except Exception as ex:
-                self.exception.emit(ex)
+        #Instantiate the CameraObject, enter a loop
+        with self.camera as camera:
+            self.running = True
+            while self.running:
+                try:
+                    frame = self.camera.get_array(complete_frames_only=True)
+                    self.frame_ready.emit(frame)
+                except Exception as ex:
+                    self.exception.emit(ex)
     
     @pyqtSlot()
     def stop(self) -> None:
-        self._running = False
-        self.camera.close()
+        self.running = False
         self.finished.emit()
 
 
@@ -1036,7 +1029,7 @@ class AnalysisWorker(Worker):
     
     @pyqtSlot(np.ndarray)
     def analyze_frame(self, frame: np.ndarray) -> None:
-        if not self.running():
+        if not self.running:
             return
         
         # Get time of data collection relative to start

@@ -81,7 +81,7 @@ class RHEEDWidget(QWidget):
         # Create the camera selection window
         self.camera_selected = select_camera()
         self.camera_selected.is_camera_selected.connect(self._finish_ui_init)
-        self.camera_selected.no_camera_selected.connect(self.close_temp)
+        self.camera_selected.no_camera_selected.connect(self.close)
         
         # Create the menu bar
         self.menubar = QMenuBar(self)
@@ -107,11 +107,6 @@ class RHEEDWidget(QWidget):
         
         # Add menubar
         self.layout.addWidget(self.menubar, 0, 0, 1, 1)
-    
-    def close_temp(self):
-        print('Close signal emitted')
-        self.close()
-    
         
     @pyqtSlot()
     def _finish_ui_init(self):
@@ -120,7 +115,7 @@ class RHEEDWidget(QWidget):
         self.setVisible(True)
         
         # Put the camera object into the VideoWidget
-        self.camera_widget.set_camera(self.camera_selected.the_camera.cam_class) ###FIX THIS
+        self.camera_widget.set_camera(self.camera_selected.the_camera)
         
         # Disconnect camera_selected signal to reuse camera selection logic
         self.camera_selected.is_camera_selected.disconnect()
@@ -195,7 +190,7 @@ class RHEEDWidget(QWidget):
             return
             
         self.camera_widget._camera.close()
-        self.camera_widget.set_camera(self.camera_selected.the_camera.cam_class)
+        self.camera_widget.set_camera(self.camera_selected.the_camera)
         
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ def get_available_cameras() -> vimba.camera.Camera:
     return(cams_list)
     
     
-class GigECamera(vimba.camera.Camera):
+class GigECamera(CameraObject):
     """ 
     A class used to encapsulate a Vimba GigE camera.
     
