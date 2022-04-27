@@ -7,6 +7,7 @@ https://stackoverflow.com/a/33453124/10342097
 import os
 from typing import Union
 import time
+import traceback
 
 from datetime import datetime
 import numpy as np
@@ -987,10 +988,9 @@ class CameraWorker(Worker):
             self.running = True
             while self.running:
                 try:
-                    frame = camera.get_array(complete_frames_only=True)
+                    frame = camera.get_array()
                     self.frame_ready.emit(frame)
                 except Exception as ex:
-                    print(ex)
                     self.exception.emit()
     
     @pyqtSlot()

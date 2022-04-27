@@ -76,7 +76,9 @@ class GigECamera(CameraObject):
           # camera is running as soon as you connect to it
         self._frame_times = []
         self.incomplete_image_count = 0
-                
+        
+        
+        
     
     def __enter__(self):
         super().__enter__()
@@ -88,6 +90,8 @@ class GigECamera(CameraObject):
         #Open the vimba camera 
         self.vim_cam = self.vim.get_camera_by_id(self.gige_camera_id)
         self.vim_cam.__enter__()
+        
+        self.vim_cam.set_pixel_format(vimba.frame.PixelFormat.Mono8)
 
         self.running = True
         
@@ -142,14 +146,11 @@ class GigECamera(CameraObject):
     def shape(self) -> Tuple[int, int]:
         return((self.Width, self.Height))
         
-    def get_array(self, complete_frames_only: bool = False) -> np.ndarray:### IMPLEMENT PROPERLY!!!
+    def get_array(self):
         # Grab and retrieve the camera array
         array = self.vim_cam.get_frame().as_opencv_image()
-        print(type(array))
-        
         # Store frame time for real FPS calculation
         self._frame_times.append(time.time())
-        print(self._frame_times())
         
         return(array)
     
