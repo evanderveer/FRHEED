@@ -184,14 +184,12 @@ class VideoWidget(QWidget):
         self.camera_thread = QThread()
         self.camera_worker.moveToThread(self.camera_thread)
         self.camera_worker.frame_ready.connect(self.show_frame)
-        self.camera_worker.finished.connect(self.camera_thread.quit)
         self.camera_thread.start()
         
         # Set up plotting thread
         self.analysis_worker = AnalysisWorker(self)
         self.analysis_thread = QThread()
         self.analysis_worker.moveToThread(self.analysis_thread)
-        self.analysis_worker.finished.connect(self.analysis_thread.quit)
         self.analysis_thread.started.connect(self.analysis_worker.start)
         self.analysis_thread.start()
         
@@ -199,10 +197,11 @@ class VideoWidget(QWidget):
         self.frame_ready.connect(self.analysis_worker.analyze_frame)
         
         # Variables to be used in properties
-        self._workers = (self.camera_worker, self.analysis_worker)
+        self.workers = (self.camera_worker, self.analysis_worker)
+        self.threads = (self.camera_thread, self.analysis_thread)
         
     def __del__(self) -> None:
-        self.camera.close()
+        self.close()
         self.setParent(None)
         
     def keyPressEvent(self, event) -> None:
@@ -239,16 +238,18 @@ class VideoWidget(QWidget):
             
     def closeEvent(self, event: QCloseEvent) -> None:
         """ Stop the camera and close settings when the widget is closed """
-        [worker.stop() for worker in self.workers]
+        for worker in self.workers: worker.stop()
+        for thread in self.threads: thread.quit()
+        
         self.settings_widget.deleteLater()
         
     @pyqtSlot()
-    def start_or_stop_camera(self) -> None: ## LET THE CAMERA_WORKER HANDLE THIS
-        if self.camera.running:
-            self.camera.stop()
+    def start_or_stop_camera(self): 
+        if self.camera_worker.running:
+            self.camera_worker.stop() 
             self.play_button.setText("Start Camera")
         else:
-            self.camera.start(continuous=True)
+            self.camera_worker.start()
             self.play_button.setText("Stop Camera")
         
     @pyqtSlot(np.ndarray)
@@ -308,11 +309,11 @@ class VideoWidget(QWidget):
         self.colormap = colormap
         
     @property
-    def camera(self) -> Union[FlirCamera, UsbCamera]:
-        return self._camera
+    def camera(self):
+        return self.camera_worker.camera
     
     @camera.setter
-    def camera(self, camera: Union[FlirCamera, UsbCamera]) -> None:
+    def camera(self, camera):
         self.set_camera(camera)
         # TODO: Fully implement this and test it
         
@@ -320,13 +321,6 @@ class VideoWidget(QWidget):
     def zoom(self) -> float:
         return self.slider.value()
         
-    @property
-    def workers(self) -> tuple:
-        return self._workers
-    
-    @property
-    def app(self) -> QApplication:
-        return QApplication.instance()
     
     @property
     def colormap(self) -> str:
@@ -366,12 +360,6 @@ class VideoWidget(QWidget):
         
     def stop_analyzing_frames(self) -> None:
         self.analyze_frames = False
-        
-    def _start_workers(self) -> None:
-        [worker.start() for worker in self._workers]
-        
-    def _stop_workers(self) -> None:
-        [worker.stop() for worker in self._workers]
         
     def _resize_frame(self, frame: np.ndarray, interp: int = DEFAULT_INTERPOLATION) -> np.ndarray:
         size = self.display.sizeHint()
@@ -995,7 +983,6 @@ class CameraWorker(Worker):
     
     @pyqtSlot()
     def start(self) -> None:
-        #Instantiate the CameraObject, enter a loop
         with self.camera as camera:
             self.running = True
             while self.running:
@@ -1009,8 +996,6 @@ class CameraWorker(Worker):
     @pyqtSlot()
     def stop(self) -> None:
         self.running = False
-        self.finished.emit()
-
 
 class AnalysisWorker(Worker):
     """

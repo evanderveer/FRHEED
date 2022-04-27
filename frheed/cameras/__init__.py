@@ -11,6 +11,8 @@ camera_classes = {
         
 class CameraObject:
 
+    self.gui_settings = {}
+
     def __init__(self):
         pass
         
@@ -19,4 +21,5 @@ class CameraObject:
         
     def __exit__(self, exc_type, exc_value, exc_traceback):
         pass
-        
+    
+    
