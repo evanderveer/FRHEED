@@ -24,8 +24,6 @@ def get_available_cameras() -> vimba.camera.Camera:
     """ Get available GigE cameras as a dictionary of {cam_id: name}. """
     cam_dict = {}
     with vimba.Vimba.get_instance() as vim:
-        print('Vimba started')
-        print('Collecting available cameras')
         cams = vim.get_all_cameras()
         for cam_num, cam in enumerate(cams):
             cam_id = cam.get_id()

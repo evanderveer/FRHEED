@@ -257,7 +257,6 @@ class VideoWidget(QWidget):
     @pyqtSlot(np.ndarray)
     def show_frame(self, frame: np.ndarray) -> None:
         """ Show the next camera frame """
-        print(self._parent._initialized)
         # Store raw frame
         self.raw_frame = frame.copy()
         
@@ -341,8 +340,9 @@ class VideoWidget(QWidget):
         # Change the camera and start it
         self.camera_worker.camera = camera
         
-        #Start the camera
-        self.camera_worker.start()
+        # Tell the CameraWorker to start the camera
+        self.camera_worker.start_camera.emit()
+
         
         # Update the zoom slider (if it has been created)
         if not hasattr(self, "slider"):
@@ -983,6 +983,15 @@ class CameraWorker(Worker):
     A worker object to control frame acquisition.
     
     """
+    
+    start_camera = pyqtSignal()
+    
+    def __init__(self, *args, **kwargs):
+        # We have to use a pyQtSignal to start the camera from the VideoWidget object
+        # instead of calling the start function directly, otherwise the thread in which 
+        # the VideoWidget instance runs will block.
+        super().__init__(*args, **kwargs)
+        self.start_camera.connect(self.start)
     
     @pyqtSlot()
     def start(self) -> None:
