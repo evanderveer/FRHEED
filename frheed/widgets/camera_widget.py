@@ -13,6 +13,7 @@ from pprint import pprint
 from datetime import datetime
 import numpy as np
 import cv2
+from functools import partial
 
 from PyQt5.QtWidgets import (
     QFrame, 
@@ -251,7 +252,7 @@ class VideoWidget(QWidget):
             self.camera_worker.stop() 
             self.play_button.setText("Start Camera")
         else:
-            self.camera_worker.start()
+            self.camera_worker.start_camera.emit()
             self.play_button.setText("Stop Camera")
         
     @pyqtSlot(np.ndarray)
@@ -337,26 +338,35 @@ class VideoWidget(QWidget):
  
     
     def set_camera(self, camera):
+        
+        # Wait for the CameraWorker to close the CameraObject, improves stability
+        while self.camera_worker.camera_online:
+            pass
+                
         # Change the camera and start it
         self.camera_worker.camera = camera
         
         # Tell the CameraWorker to start the camera
         self.camera_worker.start_camera.emit()
-
         
-        # Update the zoom slider (if it has been created)
-        if not hasattr(self, "slider"):
-            return
-        cam_w, cam_h = camera.width, camera.height
-        max_zoom = max(min(MAX_ZOOM, (MAX_W / cam_w), (MAX_H / cam_h)), 1)
-        self.slider.setMaximum(max_zoom)
-        
-        # Reset to 100% zoom
-        self.slider.setValue(1.00)
-        
-        # Update camera settings widget
-        del(self.settings_widget)
-        self.settings_widget = CameraSettingsWidget(self)
+        def _when_camera_ready(self):
+            # Update the zoom slider (if it has been created)
+            if not hasattr(self, "slider"):
+                return
+            cam_w, cam_h = self.camera_worker.camera.width, self.camera_worker.camera.height
+            max_zoom = max(min(MAX_ZOOM, (MAX_W / cam_w), (MAX_H / cam_h)), 1)
+            self.slider.setMaximum(max_zoom)
+            
+            # Reset to 100% zoom
+            self.slider.setValue(1.)
+            
+            # Update camera settings widget
+            del(self.settings_widget)
+            self.settings_widget = CameraSettingsWidget(self)
+            
+        # We have to wait for the CameraObject to finish opening, otherwise the camera.width
+        # and camera.height will not be available yet
+        self.camera_worker.camera_ready.connect(partial(_when_camera_ready, self))
         
     def start_analyzing_frames(self) -> None:
         self.analyze_frames = True
@@ -985,6 +995,7 @@ class CameraWorker(Worker):
     """
     
     start_camera = pyqtSignal()
+    camera_ready = pyqtSignal()
     
     def __init__(self, *args, **kwargs):
         # We have to use a pyQtSignal to start the camera from the VideoWidget object
@@ -992,10 +1003,13 @@ class CameraWorker(Worker):
         # the VideoWidget instance runs will block.
         super().__init__(*args, **kwargs)
         self.start_camera.connect(self.start)
+        self.camera_online = False
     
     @pyqtSlot()
     def start(self) -> None:
         with self.camera as camera:
+            self.camera_ready.emit()
+            self.camera_online = True
             self.running = True
             while self.running:
                 try:
@@ -1003,7 +1017,8 @@ class CameraWorker(Worker):
                     self.frame_ready.emit(frame)
                 except Exception as ex:
                     self.exception.emit()
-    
+        self.camera_online = False
+        
     @pyqtSlot()
     def stop(self) -> None:
         self.running = False

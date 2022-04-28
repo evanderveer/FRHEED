@@ -89,6 +89,7 @@ class GigECamera(CameraObject):
         self.vim_cam = self.vim.get_camera_by_id(self.gige_camera_id)
         self.vim_cam.__enter__()
         
+        ### TODO: Allow use of Mono16 Pixel format
         self.vim_cam.set_pixel_format(vimba.frame.PixelFormat.Mono8)
 
         self.running = True
@@ -98,7 +99,7 @@ class GigECamera(CameraObject):
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.vim_cam.__exit__(exc_type, exc_value, exc_traceback)
         self.vim.__exit__(exc_type, exc_value, exc_traceback)
-        super().__exit__(self, exc_type, exc_value, exc_traceback)
+        super().__exit__(exc_type, exc_value, exc_traceback)
         
         self._frame_times = []
         self.incomplete_image_count = 0
@@ -134,15 +135,15 @@ class GigECamera(CameraObject):
     
     @property
     def width(self) -> int:
-        return(self.Width)
+        return(self.vim_cam.Width.get())
         
     @property
     def height(self) -> int:
-        return(self.Height)
+        return(self.vim_cam.Height.get())
     
     @property
     def shape(self) -> Tuple[int, int]:
-        return((self.Width, self.Height))
+        return((self.width, self.weight))
         
     def get_array(self):
         # Grab and retrieve the camera array
