@@ -64,7 +64,8 @@ class FRHEED(QMainWindow):
         
     @pyqtSlot()
     def quit_app(self):
-        print('Quitting')
+        for thread in self.rheed_widget.camera_widget.threads:
+			thread.stop()
         self.app.quit()
         sys.exit()
 

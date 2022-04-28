@@ -102,8 +102,8 @@ class RHEEDWidget(QWidget):
         self.show_live_plots_item.toggled.connect(self.show_live_plots)
         
         # "Tools" menu
-        self.tools_menu = self.menubar.addMenu("&Tools")
-        self.preferences_item = self.tools_menu.addAction("&Preferences")
+        #self.tools_menu = self.menubar.addMenu("&Tools")
+        #self.preferences_item = self.tools_menu.addAction("&Preferences")
         
         # Add menubar
         self.layout.addWidget(self.menubar, 0, 0, 1, 1)
@@ -133,7 +133,7 @@ class RHEEDWidget(QWidget):
         super().closeEvent(event)
         
     @pyqtSlot(dict)
-    def plot_data(self, data: dict) -> None:
+    def plot_data(self, data: dict, write_to_file: bool = False) -> None:
         """ Plot data from the camera """
         # Get data for each color in the data dictionary
         for color, color_data in data.items():
@@ -143,6 +143,8 @@ class RHEEDWidget(QWidget):
                 # Catch RuntimeError if widget has been closed
                 try:
                     curve.setData(*snip_lists(color_data["time"], color_data["average"]))
+                    if write_to_file:
+                        self.write_to_file.emit(color_data)
                 except RuntimeError:
                     pass
                 
