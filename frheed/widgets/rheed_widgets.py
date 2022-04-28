@@ -189,7 +189,7 @@ class RHEEDWidget(QWidget):
         if not hasattr(self.camera_selected, 'the_camera'):
             return
             
-        self.camera_widget._camera.close()
+        self.camera_widget.camera_worker.stop()
         self.camera_widget.set_camera(self.camera_selected.the_camera)
         
 

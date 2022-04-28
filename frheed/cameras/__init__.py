@@ -10,6 +10,9 @@ camera_classes = {
         }
         
 class CameraObject:
+    """
+    The CameraObject class acts as an abstract interface for connecting to a camera. 
+    """
 
     def __init__(self): 
         self.gui_settings = {}

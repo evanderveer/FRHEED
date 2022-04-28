@@ -8,6 +8,7 @@ from typing import Union, Optional, List, Tuple
 import time
 import cv2
 import numpy as np
+from pprint import pprint
 
 from frheed.cameras import CameraError
 
@@ -213,7 +214,7 @@ class UsbCamera:
                 super().__setattr__(attr, val)
         
     def __enter__(self) -> "UsbCamera":
-        self.init()
+        self.start(continuous=True)
         return self
     
     def __exit__(self, type, value, traceback) -> None:
@@ -299,7 +300,7 @@ class UsbCamera:
         self.stop()
         self.cam.release()
         
-    def get_array(self, complete_frames_only: bool = False) -> np.ndarray:
+    def get_array(self, complete_frames_only: bool = True) -> np.ndarray:
         # Grab and retrieve the camera array
         is_complete, array = self.cam.read()
         

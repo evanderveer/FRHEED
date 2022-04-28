@@ -8,6 +8,7 @@ import os
 from typing import Union
 import time
 import traceback
+from pprint import pprint
 
 from datetime import datetime
 import numpy as np
@@ -82,7 +83,7 @@ class VideoWidget(QWidget):
     
     def __init__(self, parent = None):
         super().__init__(parent)
-        
+        self._parent = parent
         # Store colormap
         self._colormap = DEFAULT_CMAP
         
@@ -256,6 +257,7 @@ class VideoWidget(QWidget):
     @pyqtSlot(np.ndarray)
     def show_frame(self, frame: np.ndarray) -> None:
         """ Show the next camera frame """
+        print(self._parent._initialized)
         # Store raw frame
         self.raw_frame = frame.copy()
         
@@ -1012,7 +1014,7 @@ class AnalysisWorker(Worker):
     
     @property
     def raw_frame(self) -> Union[np.ndarray, None]:
-        return getattr(self.camera, "raw_frame", None)
+        return getattr(self._parent, "raw_frame", None)
     
     @pyqtSlot(np.ndarray)
     def analyze_frame(self, frame: np.ndarray) -> None:
@@ -1081,12 +1083,12 @@ class AnalysisWorker(Worker):
                 
     @pyqtSlot()
     def start(self) -> None:
-        self._running = True
+        self.running = True
         self.start_time = time.time()
             
     @pyqtSlot()
     def stop(self) -> None:
-        self._running = False
+        self.running = False
         self.start_time = None
         self.finished.emit()
         
