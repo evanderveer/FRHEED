@@ -14,8 +14,7 @@ from frheed import utils
 from functools import partial
 from pathlib import Path
 
-resource_path = Path(__file__).parent / 'resources/icons/'
-
+file_path = Path(__file__).parent 
 logger = utils.get_logger()
 
 # Fix IPython and PyQt
@@ -33,7 +32,7 @@ class FRHEED(QMainWindow):
         super().__init__(parent=None)
         
         # Show a splash screen while the app is loading
-        self.splash_screen_widget = QSplashScreen(QPixmap(str(resource_path / 'frheed.png')))
+        self.splash_screen_widget = QSplashScreen(QPixmap(str(file_path / 'resources/icons/frheed.png')))
         self.splash_screen_widget.show()
         self.splash_screen_widget.raise_()
         
@@ -65,7 +64,8 @@ class FRHEED(QMainWindow):
     @pyqtSlot()
     def quit_app(self):
         for thread in self.rheed_widget.camera_widget.threads:
-			thread.stop()
+            thread.quit()
+        self.rheed_widget.close()
         self.app.quit()
         sys.exit()
 

@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QSpacerItem,
     QMenuBar,
     QMenu,
+    QFileDialog
     
     )
 from PyQt5.QtCore import (
@@ -30,6 +31,9 @@ from frheed.widgets.canvas_widget import CanvasShape, CanvasLine
 from frheed.widgets.selection_widgets import select_camera
 from frheed.widgets.common_widgets import HSpacer, VSpacer
 from frheed.utils import snip_lists
+from os.path  import exists
+from json import dumps
+from pprint import pprint
 
 
 
@@ -38,10 +42,13 @@ class RHEEDWidget(QWidget):
     
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-
+        
         # Settings
         self.setSizePolicy(QSizePolicy.MinimumExpanding,
                            QSizePolicy.MinimumExpanding)
+        
+        #By default, we do not save the data
+        self.write_to_file = False
         
         # Create the layout
         self.layout = QGridLayout()
@@ -92,6 +99,7 @@ class RHEEDWidget(QWidget):
         # To enable it, go to Control Panel -> Ease of Access -> Keyboard 
         #                   -> Underline keyboard shortcuts and access keys
         self.file_menu = self.menubar.addMenu("&File")
+        self.file_menu.addAction("&Save to file", self.get_file_name)
         self.file_menu.addAction("&Change camera", self.change_camera)
         
         # "View" menu
@@ -125,6 +133,7 @@ class RHEEDWidget(QWidget):
         self._initialized = True
         
     def closeEvent(self, event) -> None:
+        self.file_save_worker.close()
         if self._initialized:
             [wid.setParent(None) for wid in 
                 [self.region_plot, self.profile_plot, self, self.plot_grid]]
@@ -133,7 +142,7 @@ class RHEEDWidget(QWidget):
         super().closeEvent(event)
         
     @pyqtSlot(dict)
-    def plot_data(self, data: dict, write_to_file: bool = False) -> None:
+    def plot_data(self, data: dict) -> None:
         """ Plot data from the camera """
         # Get data for each color in the data dictionary
         for color, color_data in data.items():
@@ -143,8 +152,6 @@ class RHEEDWidget(QWidget):
                 # Catch RuntimeError if widget has been closed
                 try:
                     curve.setData(*snip_lists(color_data["time"], color_data["average"]))
-                    if write_to_file:
-                        self.write_to_file.emit(color_data)
                 except RuntimeError:
                     pass
                 
@@ -162,7 +169,11 @@ class RHEEDWidget(QWidget):
             # Update region window
             if self.region_plot.auto_fft_max:
                 self.region_plot.set_fft_max(color_data["time"][-1])
-                
+        
+        #Send the data over to the FileSaveWorker object for saving to file
+        if self.write_to_file and data != {}:
+            self.file_save_worker.save_to_file(data)
+            
     @pyqtSlot(object)
     def remove_line(self, shape: Union["CanvasShape", "CanvasLine"]) -> None:
         """ Remove a line from the plot it is part of """
@@ -194,7 +205,62 @@ class RHEEDWidget(QWidget):
         # If no new camera is selected, the current camera will be maintained
         self.camera_selected.is_camera_selected.connect(partial(_finish_changing_camera, self))
         
+    def get_file_name(self):
+        file_name = QFileDialog.getSaveFileName(parent=None, caption='Open file', 
+        directory='c:\\', filter="Text file (*.txt)")
         
+        self.write_to_file = True
+        
+        # Instantiate a FileSaveWorker which will handle file saving
+        # or change the file name if one already exists
+        if not hasattr(self, 'file_save_worker'):
+            self.file_save_worker = FileSaveWorker(file_name=file_name[0][:-4])
+        else:
+            self.file_save_worker.change_file_name(file_name=file_name[0][:-4])
 
+
+class FileSaveWorker():
+    """
+    Handles all file saving operations
+    """
+
+    def __init__(self, file_name: str) -> None:
+        self.change_file_name(file_name)
+        
+        #Write the header
+        self.file.write('Shape ID,Time,Average,Shape type\n')
+        
+    def __bool__(self) -> bool:
+        return(True)
+        
+    def close(self) -> None:
+        self.file.close()
+    
+    def start_new_file(self) -> None:
+        self.change_file_name(self.file_name)
+    
+    def save_to_file(self, data: dict) -> None:
+        write_string = []
+        for shape_id, shape_data in data.items():
+            curr_time = str(shape_data['time'][-1])
+            curr_ave = str(shape_data['average'][-1])
+            curr_kind = str(shape_data['kind'][-1]) 
+            write_string.append(','.join((shape_id, curr_time, curr_ave, curr_kind)))
+        self.file.write(','.join(write_string) + '\n')
+        
+    def change_file_name(self, file_name: str) -> None:
+        if hasattr(self, 'file'):
+            self.file.close()
+            
+        self.file_name = file_name
+        self.file_num = 0
+        
+        #Make sure a unique file is saved
+        while(exists(f'{self.file_name}_{self.file_num}.txt')):
+            self.file_num += 1
+        self.file = open(f'{self.file_name}_{self.file_num}.txt', 'w')
+    
+        
+        
 if __name__ == "__main__":
     pass
