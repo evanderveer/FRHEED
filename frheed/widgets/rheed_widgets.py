@@ -56,9 +56,6 @@ class RHEEDWidget(QWidget):
         self.layout.setSpacing(4)
         self.setLayout(self.layout)
         
-        # Make all the widgets invisible until camera selected
-        self.setVisible(False)
-        
         # Make the camera widget
         #camera = self.cam_selection._cam
         self.camera_widget = VideoWidget(parent=self)
@@ -66,9 +63,7 @@ class RHEEDWidget(QWidget):
                                          QSizePolicy.MinimumExpanding)
                                          
         # Create the plot widgets
-        # self.region_plot = PlotWidget(parent=self, popup=True, name="Regions (Live)")
-        # self.profile_plot = PlotWidget(parent=self, popup=True, name="Line Profiles (Live)")
-        self.plot_grid = PlotGridWidget(parent=self, title="Live Plots", popup=True)
+        self.plot_grid = PlotGridWidget(parent=self, title="Live Plots")
         self.region_plot = self.plot_grid.region_plot
         self.profile_plot = self.plot_grid.profile_plot
         self.line_scan_plot = self.plot_grid.line_scan_plot
@@ -119,8 +114,9 @@ class RHEEDWidget(QWidget):
     @pyqtSlot()
     def _finish_ui_init(self):
         """ Finish UI setup after selecting a camera. """
-        # Show the widget
-        self.setVisible(True)
+        # Show the widgets
+        self.plot_grid.show()
+        self.parent().show()
         
         # Put the camera object into the VideoWidget
         self.camera_widget.set_camera(self.camera_selected.the_camera)
@@ -133,7 +129,8 @@ class RHEEDWidget(QWidget):
         self._initialized = True
         
     def closeEvent(self, event) -> None:
-        self.file_save_worker.close()
+        if hasattr(self, 'file_save_worker'):
+            self.file_save_worker.close()
         if self._initialized:
             [wid.setParent(None) for wid in 
                 [self.region_plot, self.profile_plot, self, self.plot_grid]]

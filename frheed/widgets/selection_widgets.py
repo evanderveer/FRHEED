@@ -24,7 +24,7 @@ from frheed.cameras import CameraObject
 from frheed.cameras import CameraError
 from frheed.utils import get_icon
 from frheed.cameras import camera_classes
-for module, cam_class in camera_classes.items():
+for module, cam_class in camera_classes.items():###GET RID OF THIS
     exec(f'from frheed.cameras.{module} import {cam_class}, get_available_cameras as get_{module}_cams')
 
 
@@ -36,7 +36,7 @@ def select_camera():
     return(camera_selection_window)
     
     
-def _find_available_cameras():
+def _find_available_cameras(): ###USE INTROSPECTION TO CLEAN THIS UP, MOVE TO CAMERAS.__INIT__
     # Check each camera class for availability
     usb_cams = [(UsbCamera(src), name) 
                 for src, name in get_usb_cams().items()]

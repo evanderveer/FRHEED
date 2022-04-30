@@ -55,7 +55,6 @@ class FRHEED(QMainWindow):
         self.setWindowIcon(utils.get_icon("FRHEED"))
         
         # Show the window and center in the screen
-        self.show()
         utils.fit_screen(self)
         
         # Start blocking event loop that ends when app is closed

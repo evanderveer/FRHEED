@@ -27,7 +27,7 @@ def get_available_cameras() -> vimba.camera.Camera:
         cams = vim.get_all_cameras()
         for cam_num, cam in enumerate(cams):
             cam_id = cam.get_id()
-            cam_dict[cam_id] = cam_num
+            cam_dict[cam_id] = f'GigE Camera {cam_num}'
     return(cam_dict)
     
     
@@ -90,7 +90,7 @@ class GigECamera(CameraObject):
         self.vim_cam.__enter__()
         
         ### TODO: Allow use of Mono16 Pixel format
-        self.vim_cam.set_pixel_format(vimba.frame.PixelFormat.Mono8)
+        self.vim_cam.set_pixel_format(vimba.frame.PixelFormat.Mono12)
 
         self.running = True
         
@@ -147,7 +147,8 @@ class GigECamera(CameraObject):
         
     def get_array(self):
         # Grab and retrieve the camera array
-        array = self.vim_cam.get_frame().as_opencv_image()
+        frame = self.vim_cam.get_frame()
+        array = frame.as_numpy_ndarray()
         # Store frame time for real FPS calculation
         self._frame_times.append(time.time())
         
