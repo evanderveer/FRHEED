@@ -20,17 +20,6 @@ from vimba.error import VimbaFeatureError
 _DEBUG = (__name__ == "__main__")
 
 
-def get_available_cameras() -> vimba.camera.Camera:
-    """ Get available GigE cameras as a dictionary of {cam_id: name}. """
-    cam_dict = {}
-    with vimba.Vimba.get_instance() as vim:
-        cams = vim.get_all_cameras()
-        for cam_num, cam in enumerate(cams):
-            cam_id = cam.get_id()
-            cam_dict[cam_id] = f'GigE Camera {cam_num}'
-    return(cam_dict)
-    
-    
 class GigECamera(CameraObject):
     """ 
     A class used to encapsulate a Vimba GigE camera.
@@ -45,19 +34,23 @@ class GigECamera(CameraObject):
     camera_methods : dictionary
         Contains all of the camera methods
     
-    """#### FIX THIS !!!
+    """#### FIX THIS 
     
+    @staticmethod
+    def get_available_cameras() -> dict:
+        """ Get available GigE cameras as a dictionary of {cam_id: name}. """
+        cam_dict = {}
+        with vimba.Vimba.get_instance() as vim:
+            cams = vim.get_all_cameras()
+            for cam_num, cam in enumerate(cams):
+                cam_id = cam.get_id()
+                cam_dict[cam_id] = f'GigE Camera {cam_num}'
+        return(cam_dict)
     
     def __init__(self, src, vimba_camera_id = None, lock = False):
         """
         Parameters
         ----------
-        vimba_camera : vimba.camera.Camera
-            Camera object
-        lock : bool, optional
-            If True, attribute access is locked down; after the camera is
-            initialized, attempts to set new attributes will raise an error. 
-            The default is True.
         """
         super().__init__()
             

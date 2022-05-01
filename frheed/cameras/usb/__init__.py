@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 from pprint import pprint
 
-from frheed.cameras import CameraError
+from frheed.cameras import CameraError, CameraObject
 
 # Suppress warning from MSMF backend bug
 # https://stackoverflow.com/a/54585850/10342097
@@ -41,52 +41,9 @@ _GUI_INFO = {
 # Backend for cameras
 _DEFAULT_BACKEND = cv2.CAP_DSHOW  # cv2.CAP_DSHOW or cv2.CAP_MSMF
 
-def list_cameras() -> List[int]:
-    """
-    Get list of indices of available USB cameras.
-
-    Returns
-    -------
-    List[int]
-        List of indices of available USB cameras.
-
-    """
-    
-    # Add camera indices until list is exhausted
-    cam_list = []
-    
-    for idx in range(100):
-        cap = cv2.VideoCapture(idx, _DEFAULT_BACKEND)
-        if not cap.read()[0]:
-            break
-        else:
-            cam_list.append(idx)
-        cap.release()
-    
-    # This seems to help fix FPS when using backend CAP_DSHOW
-    cv2.destroyAllWindows()
-        
-    return cam_list
-
-def get_available_cameras() -> dict:
-    """ Get available cameras as a dictionary of {source: name}. """
-    cams = list_cameras()
-    available = {}
-    
-    for src in cams:
-        try:
-            with UsbCamera(src=src) as cam:
-                if cam.initialized:
-                    available[src] = str(cam)
-                else:
-                    print(f"USB camera {src} is not available")
-        except CameraError:
-            print("No USB cameras detected")
-            
-    return available
 
 
-class UsbCamera:
+class UsbCamera(CameraObject):
     """
     A class used to encapsulate a cv2.VideoCapture camera.
     
@@ -125,6 +82,52 @@ class UsbCamera:
         "CAP_PROP_BUFFERSIZE":       "Amount of frames stored in internal buffer memory.",
         }
     
+    @staticmethod
+    def list_cameras() -> List[int]:
+        """
+        Get list of indices of available USB cameras.
+
+        Returns
+        -------
+        List[int]
+            List of indices of available USB cameras.
+
+        """
+        
+        # Add camera indices until list is exhausted
+        cam_list = []
+        
+        for idx in range(100):
+            cap = cv2.VideoCapture(idx, _DEFAULT_BACKEND)
+            if not cap.read()[0]:
+                break
+            else:
+                cam_list.append(idx)
+            cap.release()
+        
+        # This seems to help fix FPS when using backend CAP_DSHOW
+        cv2.destroyAllWindows()
+            
+        return cam_list
+    
+    @staticmethod
+    def get_available_cameras() -> dict:
+        """ Get available cameras as a dictionary of {source: name}. """
+        cams = UsbCamera.list_cameras()
+        available = {}
+        
+        for src in cams:
+            try:
+                with UsbCamera(src=src) as cam:
+                    if cam.initialized:
+                        available[src] = str(cam)
+                    else:
+                        print(f"USB camera {src} is not available")
+            except CameraError:
+                print("No USB cameras detected")
+                
+        return available
+    
     def __init__(
             self, 
             src: Union[int, str] = 0, 
@@ -147,7 +150,7 @@ class UsbCamera:
         super().__setattr__("camera_methods", {})
         super().__setattr__("lock", lock)
         
-        cam_list = list_cameras()
+        cam_list = UsbCamera.list_cameras()
         if (__name__ == "__main__"):
             print(f"Found {len(cam_list)} USB camera(s)")
         
@@ -228,7 +231,7 @@ class UsbCamera:
     
     @property
     def name(self) -> str:
-        return f"USB{self._src}"
+        return f"USB (Port {self._src})"
     
     @property
     def camera_type(self) -> str:
