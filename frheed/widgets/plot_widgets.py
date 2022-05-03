@@ -167,14 +167,15 @@ class PlotWidget(QWidget):
         self.plot_item.ctrlMenu.menuAction().setVisible(False)
         
         # Show widget
-        if popup:
+        '''if popup:
             self.setWindowFlags(Qt.Window)
             self.show()
             self.raise_()
             self.setWindowTitle(str(name) if name is not None else "Plot")
-            self.resize(*_DEFAULT_SIZE)
+            self.resize(*_DEFAULT_SIZE)'''
         
     def closeEvent(self, event) -> None:
+        super().close()
         self.setParent(None)
         self.plot_widget.close()
         
@@ -646,6 +647,7 @@ class PlotGridWidget(QWidget):
     def __init__(self, parent = None, title: Optional[str] = None, popup: bool = True):
         super().__init__(parent)
         self._parent = parent
+
         
         # Create layout
         self.layout = QGridLayout()
@@ -727,7 +729,6 @@ class PlotGridWidget(QWidget):
         _DEFAULT_SIZE = (800, 600)
         if popup:
             self.setWindowFlags(Qt.Window)
-            self.show()
             self.raise_()
             self.setWindowTitle(str(title) if title is not None else "Plots")
             self.resize(*_DEFAULT_SIZE)
