@@ -1029,7 +1029,8 @@ class AnalysisWorker(Worker):
     """
     data_ready = pyqtSignal(dict)
     
-    data = {}
+    area_data = {}
+    line_data = {}
     start_time = None
     
     @property
@@ -1044,7 +1045,6 @@ class AnalysisWorker(Worker):
     def analyze_frame(self, frame: np.ndarray) -> None:
         if not self.running:
             return
-        
         # Get time of data collection relative to start
         if self.start_time is None or len(self.shapes) == 0:
             self.reset_timer()
@@ -1064,8 +1064,7 @@ class AnalysisWorker(Worker):
             data = frame[mask]
             
             # Store the data
-            color = shape.color_name
-            if color not in self.data:
+            '''if color not in self.data:
                 self.data[color] = {
                     "time":     [],
                     "sum":      [],
@@ -1074,13 +1073,26 @@ class AnalysisWorker(Worker):
                     "y":        [],
                     "image":    None,
                     "kind":     shape.kind,
-                    }
+                    }'''
                 
-            # Store time value
-            self.data[color]["time"].append(t)
+            if shape.kind != 'line':
+                # Store time value
+                self.area_data['color'] = shape.color_name
+                self.area_data['time'] = t
+                self.area_data['x'] = []
+                self.area_data['y'] = []
+                self.area_data['sum'] = []
+                self.area_data['kind'] = shape.kind
+                self.area_data['image'] = None
+                mask_sum = mask.sum()
+                if mask_sum != 0:
+                    self.area_data['average'] = data.sum() / mask_sum
+                    
+        self.data_ready.emit(self.area_data.copy())
+                
             
             # Store line profile
-            if shape.kind == "line":
+        '''if shape.kind == "line":
                 # self.data[color]["x"].append(np.arange(0, data.size, 1))
                 ydata = data.flatten()
                 self.data[color]["y"].append(ydata)
@@ -1095,15 +1107,9 @@ class AnalysisWorker(Worker):
                     
                 # Update line scan data
                 else:
-                    self.data[color]["image"] = extend_image(img, ydata)
-                
-            else:
-                # Make sure sum is non-zero to avoid divide-by-zero
-                mask_sum = mask.sum()
-                if mask_sum != 0:
-                    self.data[color]["average"].append(data.sum() / mask_sum)
+                    self.data[color]["image"] = extend_image(img, ydata)'''
             
-        self.data_ready.emit(self.data.copy())
+
                 
     @pyqtSlot()
     def start(self) -> None:

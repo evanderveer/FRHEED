@@ -44,6 +44,8 @@ class RHEEDWidget(QWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         
+        self.data_dict = {}
+        
         # Settings
         self.setSizePolicy(QSizePolicy.MinimumExpanding,
                            QSizePolicy.MinimumExpanding)
@@ -145,8 +147,17 @@ class RHEEDWidget(QWidget):
     @pyqtSlot(dict)
     def plot_data(self, data: dict) -> None:
         """ Plot data from the camera """
+        
+        #Keep a local copy of the full dataset
+        
+        if data['color'] not in self.data_dict:
+            self._add_color_to_dict(color)
+        for prop in ('average','sum','x','y','time'):
+            self.data_dict[data['color']][prop].append(data[prop])
+            
+        
         # Get data for each color in the data dictionary
-        for color, color_data in data.items():
+        for color, color_data in self.data_dict.items():
             # Add region data to the region plot
             if color_data["kind"] in ["rectangle", "ellipse"]:
                 curve = self.region_plot.get_or_add_curve(color)
@@ -172,8 +183,8 @@ class RHEEDWidget(QWidget):
                 self.region_plot.set_fft_max(color_data["time"][-1])
         
         #Send the data over to the FileSaveWorker object for saving to file
-        if self.write_to_file and data != {}:
-            self.file_save_worker.save_to_file(data)
+        if self.write_to_file and self.data_dict != {}:
+            self.file_save_worker.save_to_file(self.data_dict)
             
     @pyqtSlot(object)
     def remove_line(self, shape: Union["CanvasShape", "CanvasLine"]) -> None:
@@ -194,7 +205,7 @@ class RHEEDWidget(QWidget):
         self.plot_grid.setVisible(visible)
     
     @pyqtSlot()
-    def change_camera(self):
+    def change_camera(self) -> None:
         """Closes the current camera, then selects a new one."""
         self.camera_widget.camera_worker.stop()
         sleep(0.1) #Finish IO operations
@@ -213,7 +224,7 @@ class RHEEDWidget(QWidget):
         self.camera_selected.is_camera_selected.connect(partial(_finish_changing_camera, self))
             
             
-    def get_file_name(self):
+    def get_file_name(self) -> None:
         file_name = QFileDialog.getSaveFileName(parent=None, caption='Open file', 
         directory='c:\\', filter="Text file (*.txt)")
         
@@ -225,6 +236,18 @@ class RHEEDWidget(QWidget):
             self.file_save_worker = FileSaveWorker(file_name=file_name[0][:-4])
         else:
             self.file_save_worker.change_file_name(file_name=file_name[0][:-4])
+            
+    def _add_color_to_dict(self, color: str) -> None:
+        '''Constructs the local dictionary containing the full dataset'''
+        self.data_dict[color] = {
+                    "time":     [],
+                    "sum":      [],
+                    "average":  [],
+                    "x":        [],
+                    "y":        [],
+                    "image":    None,
+                    "kind":     shape.kind,
+                    }
 
 
 class FileSaveWorker():
